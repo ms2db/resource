@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Maplestory2 Design Lab</title>
+        <style type="text/css">
+            * {
+                box-sizing:border-box;
+                font-family: Consolas;
+            }
+            html, body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+                background-color: #333;
+            }
+            #app {
+                display: flex;
+                flex-direction: column;
+                height: 100%;
+            }
+            .panel {
+                display: flex;
+                flex-direction: column;
+                height: 100%;
+            }
+            .project {
+                display: block;
+                margin: 4px;
+                padding: 6px 6px 6px 6px;
+                color: #FFF;
+                font-size: 14px;
+                background-color: #000;
+                border-radius: 4px;
+            }
+            .button-group {
+                margin: 4px;
+                padding: 4px;
+            }
+            .button {
+                padding: 2px 8px;
+                background-color: #FFF;
+                border-radius: 4px;
+                border-color: #EEF;
+            }
+            .list {
+                margin: 4px;
+                padding: 4px 2px;
+                height: 150px;
+                background-color: #000;
+                border-radius: 4px;
+                overflow-y: scroll;
+            }
+            .list-item-file {
+                margin: 4px;
+                padding: 4px;
+                font-size: 12px;
+                color: #FFF;
+                cursor: pointer;
+            }
+            .list-item-file:hover {
+                background-color: #111;
+            }
+            .list-item-log {
+                font-size: 12px;
+                color: #FFF;
+                cursor: pointer;
+            }
+            .command {
+                width: 100%;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="app">
+            <div class="panel" v-if="mode == 0">
+                <div class="project" v-if="!project">No Named Project</div>
+                <div class="project" v-if="project">{{project}}</div>
+                <div class="button-group" style="text-align: right">
+                    <button class="button" v-on:click="projectNew" v-if="!project">New</button>
+                    <button class="button" v-on:click="projectOpen" v-if="!project">Open</button>
+                    <button class="button" v-on:click="projectClose" v-if="project">Close</button>
+                </div>
+                <div class="button-group">
+                    <button class="button" v-on:click="projectUpload" v-if="project">Upload</button>
+                    <button class="button" v-on:click="projectPlay" v-if="project">Play</button>
+                </div>
+                <div class="list" style="flex-grow: 1">
+                    <div class="list-item-file" v-for="(item, index) in files" @click="selectFile(item)">
+                        {{item}}
+                    </div>
+                </div>
+                <div class="button-group" style="text-align: right">
+                    <button class="button" @click="projectRefresh()">Refresh</button>
+                </div>
+                <div style="padding: 4px">
+                    <input type="input" placeholder="command" class="command" style="padding: 4px" @keyup.enter="executeCommand" v-model="command">
+                </div>
+            </div>
+            <div class="panel" v-if="mode == 1">
+                <div class="project">
+                    <button @click="mode = 0" class="button">Back</button>
+                    <span>{{project}}</span>
+                </div>
+                <div class="project" @click="backToProject()">
+                    {{current_file}}
+                </div>
+                <div class="button-group" style="text-align: right">
+                    <button class="button" v-on:click="mapBuildTok">Build Tok</button>
+                    <button class="button" v-on:click="mapSave">Save field</button>
+                    <button class="button" v-on:click="mapLoad">Load field</button>
+                </div>
+            </div>
+            <div class="list" ref="logContainer">
+                <div class="list-item-log" v-for="(item, index) in outputs">
+                    {{item}}
+                </div>
+            </div>
+        </div>
+        <script src="https://cdn.jsdelivr.net/npm/vue@2.7.14"></script>
+        <script type="module">
+            var app = new Vue({
+                el: '#app',
+                data: {
+                    project: null,
+                    mode: 0,
+                    files: ['test.map'],
+                    outputs: ['Debug Console'],
+                    command: '',
+                    current_file: ''
+                },
+                methods: {
+                    projectNew: function (event) {
+                        ms2dl.projectNew();
+                        this.appendLog('projectNew');
+                        console.log('console...');
+                    },
+                    projectOpen: function (event) {
+                        ms2dl.projectOpen();
+                    },
+                    projectClose: function (event) {
+                        ms2dl.projectClose();
+                    },
+                    projectRefresh: function (event) {
+                        ms2dl.projectRefresh();
+                    },
+                    projectUpload: function (event) {
+                        ms2dl.projectUpload();
+                    },
+                    projectPlay: function (event) {
+                        ms2dl.projectPlay();
+                    },
+                    projectReset: function (event) {
+                        ms2dl.projectReset();
+                    },
+                    executeCommand: function (event) {
+                        ms2dl.executeCommand(this.command);
+                        this.command = '';
+                    },
+                    setProject: function (projectName) {
+                        this.project = projectName;
+                    },
+                    clearFiles: function (projectName) {
+                        this.files.splice(0, this.files.length);
+                    },
+                    addFile: function (file) {
+                        this.files.push(file);
+                    },
+                    selectFile: function (file) {
+                        if (file.match('.map$')) {
+                            this.current_file = file;
+                            this.mode = 1;
+                            ms2dl.doAction('mapEditBegin', file);
+                        }
+                    },
+                    mapBuildTok: function() {
+                        ms2dl.doAction('mapBuildTok', '');
+                    },                
+                    mapSave: function() {
+                        ms2dl.doAction('mapSave', '');
+                    },
+                    mapLoad: function() {
+                        ms2dl.doAction('mapLoad', '');
+                    },
+                    backToProject: function() {
+                        ms2dl.doAction('mapEditEnd', '');
+                        this.current_file = null;
+                        this.mode = 0;
+                    },
+                    appendLog: function (msg) {
+                        this.outputs.push(msg);
+            
+                        this.$nextTick(function () {
+                            var container = this.$refs.logContainer;
+                            container.scrollTop = container.scrollHeight;
+                        });
+                    }
+                }
+            })
+        </script>
+    </body>
+</html>
